@@ -17,6 +17,8 @@
 #include "Eyes_Pupil_64x64.h"
 #include "Eyes_LowerEyelid_128x64.h"
 
+
+
 FuzzyOLEDDriver* FuzzyOLEDDriver::fuzzyOLEDPointer = 0;
 
 /*
@@ -197,21 +199,21 @@ void FuzzyOLEDDriver::begin()
 
 
 	//setup the DMA transfer
-	Serial.println("Configuring DMA trigger");
+	//Serial.println("Configuring DMA trigger");
 
 	//default I2C for arduino zero is on SERCOM3
 	myDMA.setTrigger(SERCOM3_DMAC_ID_TX);
 	myDMA.setAction(DMA_TRIGGER_ACTON_BEAT);
-	Serial.print("Allocating DMA channel...");
+	//Serial.print("Allocating DMA channel...");
 	stat = myDMA.allocate();
-	myDMA.printStatus(stat);
+	//myDMA.printStatus(stat);
 
-	Serial.println("Adding callback");
+	//Serial.println("Adding callback");
 	// register_callback() can optionally take a second argument
 	// (callback type), default is DMA_CALLBACK_TRANSFER_DONE
 	myDMA.setCallback(fuzzyOLEDPointer->dma_callback);
 
-	Serial.println("Setting up transfer");
+	//Serial.println("Setting up transfer");
 	descriptor = myDMA.addDescriptor(
 		oledBuffer[currentUpdatingDevice],	// move data from here
 		(void *)(&SERCOM3->I2CM.DATA.reg),	// to here (zero)
@@ -316,7 +318,7 @@ void FuzzyOLEDDriver::fillHorizontal(uint8_t value)
 		}
 	}
 	uint32_t timeElapsed = micros() - timer;
-	Serial << "Fill Horizontal time elapsed = " << timeElapsed << " us." << endl;
+	//Serial << "Fill Horizontal time elapsed = " << timeElapsed << " us." << endl;
 }
 
 void FuzzyOLEDDriver::dma_callback(Adafruit_ZeroDMA * dma)
@@ -375,7 +377,7 @@ void FuzzyOLEDDriver::writeBufferHorizontal(unionBufferType *buffer, EYE_INDEX e
 	}
 
 	uint32_t duration = micros() - timer;
-	Serial << "writeBufferHorizontal() duration = " << duration << " us." << endl;
+	//Serial << "writeBufferHorizontal() duration = " << duration << " us." << endl;
 }
 
 void FuzzyOLEDDriver::writeBufferDMA(unionBufferType *buffer, EYE_INDEX eye)
@@ -416,14 +418,14 @@ void FuzzyOLEDDriver::setEyeArray(const unsigned char * _upperEyelidBitmapArray,
 	//copy bitmap array to application array. 
 	//bright and dark are stored in the two extra array items
 
-	//left eye is a direct copy
+	//Right eye is a direct copy
 	//upper eyelid, upper out-of-bounds are dark, lower out-of-bounds are bright
 	for (uint16_t arrayIndex = 0; arrayIndex < OLED_BUFFER_SIZE; arrayIndex++)
 	{
-		unionLeftUpperEyelidArray.buffer8[arrayIndex] = _upperEyelidBitmapArray[arrayIndex];
+		unionRightUpperEyelidArray.buffer8[arrayIndex] = _upperEyelidBitmapArray[arrayIndex];
 	}
-	unionLeftUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
-	unionLeftUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
+	unionRightUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
+	unionRightUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
 
 	//pupil, direct copy
 	for (uint16_t arrayIndex = 0; arrayIndex < PUPIL_BUFFER_SIZE; arrayIndex++)
@@ -437,36 +439,35 @@ void FuzzyOLEDDriver::setEyeArray(const unsigned char * _upperEyelidBitmapArray,
 	//lower eyelid, upper out-of-bounds values are white, lower out-of-bounds values are dark
 	for (uint16_t arrayIndex = 0; arrayIndex < OLED_BUFFER_SIZE; arrayIndex++)
 	{
-		unionLeftLowerEyelidArray.buffer8[arrayIndex] = _lowerEyelidBitmapArray[arrayIndex];
+		unionRightLowerEyelidArray.buffer8[arrayIndex] = _lowerEyelidBitmapArray[arrayIndex];
 	}
-	unionLeftLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
-	unionLeftLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
+	unionRightLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
+	unionRightLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
 
 
-
-	//right eye is a direct copy for pupil, mirror copy for upper and lower eyelid
+	//Left eye is a mirror copy for upper and lower eyelid
 
 	//upper eyelid, upper out-of-bounds are dark, lower out-of-bounds are bright
 	for (uint16_t pageIndex = 0; pageIndex < OLED_SCREEN_PAGE; pageIndex++)
 	{
 		for (uint16_t columnIndex = 0; columnIndex < OLED_SCREEN_COLUMN; columnIndex++)
 		{
-			unionRightUpperEyelidArray.buffer8[OLED_SCREEN_COLUMN - columnIndex - 1 + pageIndex*OLED_SCREEN_COLUMN] = _upperEyelidBitmapArray[columnIndex + pageIndex*OLED_SCREEN_COLUMN];
+			unionLeftUpperEyelidArray.buffer8[OLED_SCREEN_COLUMN - columnIndex - 1 + pageIndex*OLED_SCREEN_COLUMN] = _upperEyelidBitmapArray[columnIndex + pageIndex*OLED_SCREEN_COLUMN];
 		}
 	}
-	unionRightUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
-	unionRightUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
+	unionLeftUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
+	unionLeftUpperEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
 
 	//lower eyelid, upper out-of-bounds values are white, lower out-of-bounds values are dark
 	for (uint16_t pageIndex = 0; pageIndex < OLED_SCREEN_PAGE; pageIndex++)
 	{
 		for (uint16_t columnIndex = 0; columnIndex < OLED_SCREEN_COLUMN; columnIndex++)
 		{
-			unionRightLowerEyelidArray.buffer8[OLED_SCREEN_COLUMN - columnIndex - 1 + pageIndex*OLED_SCREEN_COLUMN] = _lowerEyelidBitmapArray[columnIndex + pageIndex*OLED_SCREEN_COLUMN];
+			unionLeftLowerEyelidArray.buffer8[OLED_SCREEN_COLUMN - columnIndex - 1 + pageIndex*OLED_SCREEN_COLUMN] = _lowerEyelidBitmapArray[columnIndex + pageIndex*OLED_SCREEN_COLUMN];
 		}
 	}
-	unionRightLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
-	unionRightLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
+	unionLeftLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_BRIGHT_INDEX_OFFSET - 1] = BRIGHT_32;
+	unionLeftLowerEyelidArray.buffer32[OLED_BUFFER_SIZE_32 + EOF_DARK_INDEX_OFFSET - 1] = DARK_32;
 }
 
 void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapArrayType *upperEyelidArray, unionPupilBitmapArrayType *pupilArray, unionEyelidBitmapArrayType *lowerEyelidArray, EYE_INDEX eye)
@@ -497,16 +498,22 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 	int16_t upperEyelidByte32IndexOffset; //used to get current data byte32 index
 	int16_t lowerEyelidByte32IndexOffset; //used to get current data byte32 index
 	int16_t pupilIndex32 = 0;
+	int16_t PupilXPositionOffset = 0;
+	int16_t PupilYPositionOffset = 0;
 
 	if (eye == LEFT_EYE)
 	{
 		upperEyelidYOffset = -leftUpperEyelidPositionOffset - upperEyelidBlinkYOffsetDeltaLeft;
 		lowerEyelidYOffset = -leftLowerEyelidPositionOffset;
+		PupilXPositionOffset = leftPupilXPositionOffset;
+		PupilYPositionOffset = leftPupilYPositionOffset;
 	}
 	else if (eye == RIGHT_EYE)
 	{
 		upperEyelidYOffset = -rightUpperEyelidPositionOffset - upperEyelidBlinkYOffsetDeltaRight;
 		lowerEyelidYOffset = -rightLowerEyelidPositionOffset;
+		PupilXPositionOffset = rightPupilXPositionOffset;
+		PupilYPositionOffset = rightPupilYPositionOffset;
 	}
 
 
@@ -571,9 +578,9 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 	//leftPupilXPositionOffset = 0;
 	//leftPupilYPositionOffset = -1;
 
-	int16_t pupilScreenStartingX = PUPIL_SIDE_MARGIN + leftPupilXPositionOffset;
+	int16_t pupilScreenStartingX = PUPIL_SIDE_MARGIN + PupilXPositionOffset;
 	int16_t puiplScreenEndingX = pupilScreenStartingX + PUPIL_WIDTH - 1;
-	int16_t pupilScreenStartingY = PUIIL_TOP_DOWN_MARGIN + leftPupilYPositionOffset;
+	int16_t pupilScreenStartingY = PUIIL_TOP_DOWN_MARGIN + PupilYPositionOffset;
 	int16_t puiplScreenEndingY = pupilScreenStartingY + PUPIL_HEIGHT - 1;
 
 	int16_t pupilArrayStartingX;
@@ -597,8 +604,8 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 	int16_t pupilArrayOtherByteIndexOffset;
 
 	bool pupilOnScreen = true;
-	if (abs(leftPupilXPositionOffset) >= ((OLED_SCREEN_WIDTH + PUPIL_WIDTH) / 2)) pupilOnScreen = false;
-	if (abs(leftPupilYPositionOffset) >= ((OLED_SCREEN_HEIGHT + PUPIL_HEIGHT) / 2)) pupilOnScreen = false;
+	if (abs(PupilXPositionOffset) >= ((OLED_SCREEN_WIDTH + PUPIL_WIDTH) / 2)) pupilOnScreen = false;
+	if (abs(PupilXPositionOffset) >= ((OLED_SCREEN_HEIGHT + PUPIL_HEIGHT) / 2)) pupilOnScreen = false;
 
 	if (pupilOnScreen == true)
 	{
@@ -623,8 +630,8 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 		*/
 
 
-		pupilArrayStartingX = (leftPupilXPositionOffset + PUPIL_SIDE_MARGIN) >= 0 ? 0 : -(leftPupilXPositionOffset + PUPIL_SIDE_MARGIN);
-		pupilArrayEndingX = (leftPupilXPositionOffset - PUPIL_SIDE_MARGIN) <= 0 ? (PUPIL_WIDTH - 1) : PUPIL_WIDTH - (leftPupilXPositionOffset - PUPIL_SIDE_MARGIN) - 1;
+		pupilArrayStartingX = (PupilXPositionOffset + PUPIL_SIDE_MARGIN) >= 0 ? 0 : -(PupilXPositionOffset + PUPIL_SIDE_MARGIN);
+		pupilArrayEndingX = (PupilXPositionOffset - PUPIL_SIDE_MARGIN) <= 0 ? (PUPIL_WIDTH - 1) : PUPIL_WIDTH - (PupilXPositionOffset - PUPIL_SIDE_MARGIN) - 1;
 		//calculate pupilScreenStartingColumn32
 		/*target values
 		startingX	pupilScreenStartingColumn32
@@ -636,8 +643,8 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 		5			1
 		*/
 
-		pupilArrayStartingY = (leftPupilYPositionOffset + PUIIL_TOP_DOWN_MARGIN) >= 0 ? 0 : -(leftPupilYPositionOffset + PUIIL_TOP_DOWN_MARGIN);
-		pupilArrayEndingY = (leftPupilYPositionOffset - PUIIL_TOP_DOWN_MARGIN) <= 0 ? (PUPIL_HEIGHT - 1) : PUPIL_HEIGHT - (leftPupilYPositionOffset - PUIIL_TOP_DOWN_MARGIN) - 1;
+		pupilArrayStartingY = (PupilYPositionOffset + PUIIL_TOP_DOWN_MARGIN) >= 0 ? 0 : -(PupilYPositionOffset + PUIIL_TOP_DOWN_MARGIN);
+		pupilArrayEndingY = (PupilYPositionOffset - PUIIL_TOP_DOWN_MARGIN) <= 0 ? (PUPIL_HEIGHT - 1) : PUPIL_HEIGHT - (PupilYPositionOffset - PUIIL_TOP_DOWN_MARGIN) - 1;
 
 		pupilArrayStartingPage = pupilArrayStartingY >> 3;
 		pupilArrayStartingColumn = pupilArrayStartingX;
@@ -665,18 +672,18 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 		pupilScreenPageCount = pupilScreenEndingPage - pupilScreenStartingPage + 1;
 
 
-		if (leftPupilYPositionOffset % 8 != 0)
+		if (PupilYPositionOffset % 8 != 0)
 		{
-			if (leftPupilYPositionOffset > 0)
+			if (PupilYPositionOffset > 0)
 			{
 				pupilArrayOtherByteIndexOffset = -PUPIL_WIDTH;
-				pupilCurrentPageShift = leftPupilYPositionOffset & 0B00000111;
+				pupilCurrentPageShift = PupilYPositionOffset & 0B00000111;
 				pupilOtherPageShift = 8 - pupilCurrentPageShift;
 			}
 			else
 			{
 				pupilArrayOtherByteIndexOffset = PUPIL_WIDTH;
-				pupilCurrentPageShift = 8 - leftPupilYPositionOffset & 0B00000111;
+				pupilCurrentPageShift = 8 - PupilYPositionOffset & 0B00000111;
 				pupilOtherPageShift = 8 - pupilCurrentPageShift;
 			}
 		}
@@ -864,7 +871,7 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 	//pupil application using 8 bit method (32bit too complicated)
 	if (pupilOnScreen == true)
 	{
-		if (leftPupilYPositionOffset >= 0)
+		if (PupilYPositionOffset >= 0)
 		{
 			for (uint16_t screenPageOffset = 0; screenPageOffset < pupilScreenPageCount; screenPageOffset++)
 			{
@@ -903,11 +910,11 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 						pupilArray->buffer8[pupilOtherArrayIndex] >> pupilOtherPageShift
 						;
 					/*
-					move the (leftPupilYPositionOffset >= 0) outside of the for loop
+					move the (PupilYPositionOffset >= 0) outside of the for loop
 					saves 300us time.
 					(from 1308 to 1010us)
 
-					if (leftPupilYPositionOffset >= 0)
+					if (PupilYPositionOffset >= 0)
 					{
 					pupilDataToWrite =
 					pupilArray->buffer8[pupilArrayIndex] << pupilCurrentPageShift
@@ -928,7 +935,7 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 				}
 			}
 		}
-		else //(leftPupilYPositionOffset < 0)
+		else //(PupilYPositionOffset < 0)
 		{
 			for (uint16_t screenPageOffset = 0; screenPageOffset < pupilScreenPageCount; screenPageOffset++)
 			{
@@ -983,8 +990,8 @@ void FuzzyOLEDDriver::drawEye(unionBufferType *screenBuffer, unionEyelidBitmapAr
 	Serial << " pupilOnScreen = " << pupilOnScreen << endl;
 	if (pupilOnScreen == true)
 	{
-		Serial << " leftPupilXPositionOffset  = " << leftPupilXPositionOffset << endl;
-		Serial << " leftPupilYPositionOffset  = " << leftPupilYPositionOffset << endl;
+		Serial << " PupilXPositionOffset  = " << PupilXPositionOffset << endl;
+		Serial << " PupilYPositionOffset  = " << PupilYPositionOffset << endl;
 		Serial << endl;
 		Serial << " pupilScreenStartingX  = " << pupilScreenStartingX << endl;
 		Serial << " puiplScreenEndingX  = " << puiplScreenEndingX << endl;
@@ -1064,13 +1071,12 @@ void FuzzyOLEDDriver::update()
 {
 	updateDMA();
 	updateBlink();
-	
+	updatePosition();
 
 	if (autoMovement == true)
 	{
 		randomBlink();
 		randomPosition();
-		updatePosition();
 	}
 }
 
@@ -1180,45 +1186,453 @@ void FuzzyOLEDDriver::updatePosition()
 	if (millis() - updatePositionTimer < UPDATE_POSITION_INTERVAL) return;
 	updatePositionTimer = millis();
 
-	if (leftPupilXPositionOffset > targetXLeft) leftPupilXPositionOffset -= 2;
-	if (leftPupilXPositionOffset < targetXLeft) leftPupilXPositionOffset += 2;
+	//update left pupil position
+	if (leftPupilXPositionOffset > targetXLeft)
+	{
+		if (leftPupilXPositionOffset - targetXLeft > 10)
+		{
+			leftPupilXPositionOffset -= 2;
+		}
+		else
+		{
+			leftPupilXPositionOffset -= 1;
+		}
+	}
+	if (leftPupilXPositionOffset < targetXLeft)
+	{
+		if (targetXLeft - leftPupilXPositionOffset   > 10)
+		{
+			leftPupilXPositionOffset += 2;
+		}
+		else
+		{
+			leftPupilXPositionOffset += 1;
+		}
+	}
 	if (leftPupilYPositionOffset > targetYLeft)
 	{
 		leftPupilYPositionOffset--;
-		//change eyelid position with pupil position
-		leftUpperEyelidPositionOffset = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-		leftLowerEyelidPositionOffset = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-	}
+		if (autoMovement == true)
+		{
+			//change eyelid position with pupil position
+			leftUpperEyelidPositionOffsetTarget = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+			leftLowerEyelidPositionOffsetTarget = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		}
+		else
+		{
 
+		}
+	}
 	if (leftPupilYPositionOffset < targetYLeft)
 	{
 		leftPupilYPositionOffset++;
-		//change eyelid position with pupil position
-		leftUpperEyelidPositionOffset = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-		leftLowerEyelidPositionOffset = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		if (autoMovement == true)
+		{
+			//change eyelid position with pupil position
+			leftUpperEyelidPositionOffsetTarget = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+			leftLowerEyelidPositionOffsetTarget = leftPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		}
+		else
+		{
+
+		}
 	}
 
+	//update left eyelid position
+	if (leftUpperEyelidPositionOffset > leftUpperEyelidPositionOffsetTarget) leftUpperEyelidPositionOffset--;
+	if (leftUpperEyelidPositionOffset < leftUpperEyelidPositionOffsetTarget) leftUpperEyelidPositionOffset++;
+	if (leftLowerEyelidPositionOffset > leftLowerEyelidPositionOffsetTarget) leftLowerEyelidPositionOffset--;
+	if (leftLowerEyelidPositionOffset < leftLowerEyelidPositionOffsetTarget) leftLowerEyelidPositionOffset++;
 
-	if (rightPupilXPositionOffset > targetXRight) rightPupilXPositionOffset -= 2;
-	if (rightPupilXPositionOffset < targetXRight) rightPupilXPositionOffset += 2;
+
+	//update right pupil position
+	if (rightPupilXPositionOffset > targetXRight)
+	{
+		if (rightPupilXPositionOffset - targetXRight > 10)
+		{
+			rightPupilXPositionOffset -= 2;
+		}
+		else
+		{
+			rightPupilXPositionOffset -= 1;
+		}
+	}
+	if (rightPupilXPositionOffset < targetXRight)
+	{
+		if (targetXRight - rightPupilXPositionOffset   > 10)
+		{
+			rightPupilXPositionOffset += 2;
+		}
+		else
+		{
+			rightPupilXPositionOffset += 1;
+		}
+	} 
 	if (rightPupilYPositionOffset > targetYRight)
 	{
 		rightPupilYPositionOffset--;
-		//change eyelid position with pupil position
-		rightUpperEyelidPositionOffset = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-		rightLowerEyelidPositionOffset = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-	}
+		if (autoMovement == true)
+		{
+			//change eyelid position with pupil position
+			rightUpperEyelidPositionOffsetTarget = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+			rightLowerEyelidPositionOffsetTarget = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		}
+		else
+		{
 
+		}
+	}
 	if (rightPupilYPositionOffset < targetYRight)
 	{
 		rightPupilYPositionOffset++;
-		//change eyelid position with pupil position
-		rightUpperEyelidPositionOffset = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
-		rightLowerEyelidPositionOffset = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		if (autoMovement == true)
+		{
+			//change eyelid position with pupil position
+			rightUpperEyelidPositionOffsetTarget = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+			rightLowerEyelidPositionOffsetTarget = rightPupilYPositionOffset / EYELID_MOVEMENT_DIVIDER;
+		}
+		else
+		{
+
+		}
 	}
+
+	//update right eyelid position
+	if (rightUpperEyelidPositionOffset > rightUpperEyelidPositionOffsetTarget) rightUpperEyelidPositionOffset--;
+	if (rightUpperEyelidPositionOffset < rightUpperEyelidPositionOffsetTarget) rightUpperEyelidPositionOffset++;
+	if (rightLowerEyelidPositionOffset > rightLowerEyelidPositionOffsetTarget) rightLowerEyelidPositionOffset--;
+	if (rightLowerEyelidPositionOffset < rightLowerEyelidPositionOffsetTarget) rightLowerEyelidPositionOffset++;
+
 }
 
 void FuzzyOLEDDriver::startAutoMovement()
 {
 	autoMovement = true;
+}
+
+void FuzzyOLEDDriver::stopAutoMovement()
+{
+	autoMovement = false;
+}
+
+void FuzzyOLEDDriver::setEyeTargetPosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye)
+{
+	if (eye == LEFT_EYE)
+	{
+		targetXLeft = PupilX;
+		targetYLeft = PupilY;
+		leftUpperEyelidPositionOffsetTarget = UpperEyelid;
+		leftLowerEyelidPositionOffsetTarget = LowerEyelid;
+	}
+	else if (eye == RIGHT_EYE)
+	{
+		targetXRight = PupilX;
+		targetYRight = PupilY;
+		rightUpperEyelidPositionOffsetTarget = UpperEyelid;
+		rightLowerEyelidPositionOffsetTarget = LowerEyelid;
+	}
+
+	
+}
+
+/*pointer used to attach TC5 interrupt*/
+FuzzyDACAudio* _audioInstancePointer;
+
+FuzzyDACAudio::FuzzyDACAudio()
+{
+	_audioInstancePointer = this;
+}
+
+void FuzzyDACAudio::begin()
+{
+	//configure the dac
+	pinMode(A0, OUTPUT);
+	analogWriteResolution(8);
+	analogWrite(A0, DAC_8_NEUTRAL);
+
+	//configure the sound arrays
+	arrayMetadata[0]._HuffDict = HuffDict1;
+	arrayMetadata[0]._SoundDataBits = SoundDataBits1;
+	arrayMetadata[0]._SoundData = SoundData1;
+
+	arrayMetadata[1]._HuffDict = HuffDict2;
+	arrayMetadata[1]._SoundDataBits = SoundDataBits2;
+	arrayMetadata[1]._SoundData = SoundData2;
+
+	arrayMetadata[2]._HuffDict = HuffDict3;
+	arrayMetadata[2]._SoundDataBits = SoundDataBits3;
+	arrayMetadata[2]._SoundData = SoundData3;
+
+	arrayMetadata[3]._HuffDict = HuffDict4;
+	arrayMetadata[3]._SoundDataBits = SoundDataBits4;
+	arrayMetadata[3]._SoundData = SoundData4;
+
+	arrayMetadata[4]._HuffDict = HuffDict5;
+	arrayMetadata[4]._SoundDataBits = SoundDataBits5;
+	arrayMetadata[4]._SoundData = SoundData5;
+
+	arrayMetadata[5]._HuffDict = HuffDict6;
+	arrayMetadata[5]._SoundDataBits = SoundDataBits6;
+	arrayMetadata[5]._SoundData = SoundData6;
+
+	arrayMetadata[6]._HuffDict = HuffDict7;
+	arrayMetadata[6]._SoundDataBits = SoundDataBits7;
+	arrayMetadata[6]._SoundData = SoundData7;
+
+	arrayMetadata[7]._HuffDict = HuffDict8;
+	arrayMetadata[7]._SoundDataBits = SoundDataBits8;
+	arrayMetadata[7]._SoundData = SoundData8;
+
+	arrayMetadata[8]._HuffDict = HuffDict9;
+	arrayMetadata[8]._SoundDataBits = SoundDataBits9;
+	arrayMetadata[8]._SoundData = SoundData9;
+
+	arrayMetadata[9]._HuffDict = HuffDict10;
+	arrayMetadata[9]._SoundDataBits = SoundDataBits10;
+	arrayMetadata[9]._SoundData = SoundData10;
+
+	//active 8002D
+	pinMode(SHUTDOWN_PIN, OUTPUT);
+	setAmplifier(OFF);
+	
+
+	//configure the TC
+	tcConfigure(_sampleRate);
+
+}
+
+void FuzzyDACAudio::tcConfigure(uint32_t sampleRate)
+{
+	// Enable GCLK for TC4 and TC5 (timer counter input clock)
+	GCLK->CLKCTRL.reg = (uint16_t)(GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID(GCM_TC4_TC5));
+	while (GCLK->STATUS.bit.SYNCBUSY);
+
+	tcReset();
+
+	// Set Timer counter Mode to 16 bits
+	TC5->COUNT16.CTRLA.reg |= TC_CTRLA_MODE_COUNT16;
+
+	// Set TC5 mode as match frequency
+	TC5->COUNT16.CTRLA.reg |= TC_CTRLA_WAVEGEN_MFRQ;
+
+	//set prescaler
+	TC5->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV1;
+
+	//setup the count value
+	TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / sampleRate - 1);
+	while (tcIsSyncing());
+
+	//SERIAL_OBJECT << "COUNT16.CC[0].reg = " << TC5->COUNT16.CC[0].reg << endl;
+
+	// Configure interrupt request
+	NVIC_DisableIRQ(TC5_IRQn);
+	NVIC_ClearPendingIRQ(TC5_IRQn);
+	NVIC_SetPriority(TC5_IRQn, 0);
+	NVIC_EnableIRQ(TC5_IRQn);
+
+	// Enable the TC5 interrupt request
+	TC5->COUNT16.INTENSET.bit.MC0 = 1;
+	while (tcIsSyncing());
+}
+
+void FuzzyDACAudio::play8BitArray(const uint8_t* arrayName, uint32_t arraySize)
+{
+	if (__isPlaying == true)return;
+	__isPlaying = true;
+	__nowPlayingSampleIndex = 0;
+	__arraySize = arraySize;
+	__arrayName = arrayName;
+	//SERIAL_OBJECT << "array address = " << (uint32_t)__arrayName << endl;
+	//SERIAL_OBJECT << "Size of array = " << arraySize << endl;
+
+	tcStartCounter();
+
+}
+
+void FuzzyDACAudio::playHuffArrayBlocking(uint8_t trackIndex)
+{
+	if (trackIndex >= NUMBER_OF_SOUND_TRACKS) return;
+	if (__isPlaying == true)return;
+	__isPlaying = true;
+
+	setAmplifier(ON);
+
+	//setup the values and array pointers 
+	g_stat.samplePosition = 0;
+	g_stat.currentPCM = 0;
+	_HuffDict = arrayMetadata[trackIndex]._HuffDict;
+	_SoundDataBits = arrayMetadata[trackIndex]._SoundDataBits;
+	_SoundData = arrayMetadata[trackIndex]._SoundData;
+
+	tcStartCounter();
+	while (isPlaying());
+
+	//reset the sample rate to default value
+	TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / _sampleRate - 1);
+	while (tcIsSyncing());
+
+	setAmplifier(OFF);
+}
+
+void FuzzyDACAudio::playHuffArrayBlocking(uint8_t trackIndex, uint16_t sampleRate)
+{
+	//setup the new sample rate
+	TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / sampleRate - 1);
+	while (tcIsSyncing());
+
+	playHuffArrayBlocking(trackIndex);
+}
+
+void FuzzyDACAudio::tcReset()
+{
+	/*
+	Reset TCx
+	All registers in the TC, except DBGCTRL, will be reset to their initial state,
+	and the TC will be disabled.
+	The TC should be disabled before the TC is reset in order to avoid undefined behavior.
+	*/
+
+	tcDisable();
+	TC5->COUNT16.CTRLA.reg = TC_CTRLA_SWRST;
+	while (tcIsSyncing());
+	while (TC5->COUNT16.CTRLA.bit.SWRST);
+}
+
+void FuzzyDACAudio::tcDisable()
+{
+	// Disable TC5
+	TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
+	while (tcIsSyncing());
+}
+
+bool FuzzyDACAudio::tcIsSyncing()
+{
+	return TC5->COUNT16.STATUS.reg & TC_STATUS_SYNCBUSY;
+}
+
+void FuzzyDACAudio::tcStartCounter()
+{
+	// Enable TC
+
+	TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
+	while (tcIsSyncing());
+}
+
+void FuzzyDACAudio::interruptHandler(void)
+{
+	loadSample();
+
+	/*
+	if (__nowPlayingSampleIndex < __arraySize)
+	{
+	//SERIAL_OBJECT << __arrayName[__nowPlayingSampleIndex];
+	analogWrite(A0, __arrayName[__nowPlayingSampleIndex]);
+	__nowPlayingSampleIndex++;
+	}
+	else
+	{
+	// Disable TC5
+	tcDisable();
+	__isPlaying = false;
+	analogWrite(A0, DAC_8_NEUTRAL);
+	}
+	*/
+	// Clear the interrupt
+	TC5->COUNT16.INTFLAG.bit.MC0 = 1;
+}
+
+bool FuzzyDACAudio::isPlaying()
+{
+	return __isPlaying;
+}
+
+// Get one bit from sound data
+inline int FuzzyDACAudio::_get_bit(uint_fast32_t pos, boolean autoLoadOnBit0) {
+	const auto bitPosition = pos & 7;
+	static uint_fast8_t bit;
+	if (!autoLoadOnBit0 || !bitPosition) {
+		// read indexed byte from Flash memory
+		//bit = pgm_read_byte(&SoundData[pos >> 3]);
+		bit = _SoundData[pos >> 3];
+	}
+	// extract the indexed bit
+	return (bit >> (7 - bitPosition)) & 1;
+}
+
+// Decode bit stream using Huffman codes
+int_fast16_t FuzzyDACAudio::_decode_huff(uint_fast32_t &pos, int_fast16_t const *huffDict) {
+	auto p = pos;
+	do {
+		const auto b = _get_bit(p++, true);
+		if (b) {
+			const auto offs = *huffDict;
+			huffDict += offs ? offs + 1 : 2;
+		}
+	} while (*(huffDict++));
+	pos = p;
+	return *huffDict;
+}
+
+// This is called at sample rate to load the next sample.
+void FuzzyDACAudio::loadSample()
+{
+	auto samplePosition = g_stat.samplePosition;
+
+	// At end of sample, restart from zero, looping the sound.
+	// ------
+	// MIC: Don't forget to reset current amplitude, Thomas. :)
+	// Forgetting to reset amplitude will cause a positive feedback, which displays as a deterioration in playback.
+	// The time before playback failure depends on the last sample value.
+	if (samplePosition >= _SoundDataBits) {
+		//SERIAL_OBJECT << "samplePosition = " << samplePosition << endl;
+		samplePosition = 0;
+		g_stat.currentPCM = 0;
+
+		// Disable TC5
+		tcDisable();
+		__isPlaying = false;
+		analogWrite(A0, DAC_8_NEUTRAL);
+	}
+
+	// MIC: The differential series Dif[N+1] := sbytes[N+1] - sbytes[N], and Dif[0] = sbytes[0].
+	// Has to be sint16, since each element is computed by subtraction between 2 sint8s.
+	auto differential = _decode_huff(samplePosition, _HuffDict);
+	g_stat.currentPCM += differential;
+
+	// Set 16-bit PWM register with sample value
+	//OCR1A = constrain(g_stat.currentPCM + (1 << (SampleBits - 1)), 0, (1 << SampleBits) - 1);
+
+	uint16_t sample = constrain(g_stat.currentPCM + (1 << (SampleBits - 1)), 0, (1 << SampleBits) - 1);
+
+	//SERIAL_OBJECT << "sample = " << sample << endl;
+
+	const uint16_t dev = 120;
+	sample = constrain(sample, DAC_8_NEUTRAL - dev, DAC_8_NEUTRAL + dev);
+	sample = map(sample, DAC_8_NEUTRAL - dev, DAC_8_NEUTRAL + dev, 0, 255);
+
+
+	//output the value to DAC
+	analogWrite(A0, sample);
+
+	g_stat.samplePosition = samplePosition;
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	void TC5_Handler(void)
+	{
+		//attach the TC5 interrupt handler to the instance
+		_audioInstancePointer->interruptHandler();
+	}
+
+
+#ifdef __cplusplus
+}
+#endif
+
+void FuzzyDACAudio::setAmplifier(bool status)
+{
+	digitalWrite(SHUTDOWN_PIN, !status); 
 }

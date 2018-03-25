@@ -21,11 +21,11 @@
 #include "Adafruit_ZeroDMA_Local.h"
 #include <Wire.h>
 
-//#define ENABLE_DEVICE_2
+#define ENABLE_DEVICE_2
 
 
-#define I2C_ADDRESS_1 0x3C
-#define I2C_ADDRESS_2 0x3D
+#define I2C_ADDRESS_1 0x3D //3D (0x7A on pcb) is placed at the left eye
+#define I2C_ADDRESS_2 0x3C //3C (0x78 on pcb) is placed at the right eye
 #define I2C_WRITE 0x00
 #define I2C_READ 0x01
 #define DISPLAY_OFF 0xAE
@@ -137,7 +137,9 @@ public:
 	void blink();
 	void update();
 	void startAutoMovement();
+	void stopAutoMovement();
 	void fillHorizontal(uint8_t value);
+	void setEyeTargetPosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye);
 
 private:
 	uint8_t _i2cAddress[2] = { I2C_ADDRESS_1,I2C_ADDRESS_2 };
@@ -211,6 +213,10 @@ private:
 	int16_t targetYLeft;
 	int16_t targetXRight;
 	int16_t targetYRight;
+	int16_t leftUpperEyelidPositionOffsetTarget = 0;
+	int16_t leftLowerEyelidPositionOffsetTarget = 0;
+	int16_t rightUpperEyelidPositionOffsetTarget = 0;
+	int16_t rightLowerEyelidPositionOffsetTarget = 0;
 
 	void updatePosition();
 	uint32_t updatePositionTimer;
@@ -229,6 +235,66 @@ private:
 	uint32_t fpsTimer;
 	uint16_t fps;
 };
+
+
+
+
+#include "sounddata.h"
+
+#define DAC_8_NEUTRAL 128
+#define DEFAULT_SAMPLE_RATE 22050
+#define SHUTDOWN_PIN 4
+#define ON true
+#define OFF false
+
+struct {
+	// Current sample position
+	uint_fast32_t samplePosition;
+
+	// Current amplitude value
+	// ------
+	// MIC: Actual value should be integers within [0, 255], and its used for a 16-bit timer.
+	// But I'm still setting it to int16 to avoid potential (lower-bound) overflow.
+	// See value setting of OCR1A.
+	int_fast16_t currentPCM;
+
+} g_stat = { 0, 0 };
+
+
+class FuzzyDACAudio
+{
+public:
+	FuzzyDACAudio();
+	void begin();
+	void play8BitArray(const uint8_t* arrayName, uint32_t arraySize);
+	void interruptHandler();
+	bool isPlaying();
+	void playHuffArrayBlocking(uint8_t trackIndex);
+	void playHuffArrayBlocking(uint8_t trackIndex, uint16_t sampleRate);
+
+private:
+	uint32_t _sampleRate = DEFAULT_SAMPLE_RATE;
+	void tcConfigure(uint32_t sampleRate);
+	void tcReset();
+	void tcDisable();
+	bool tcIsSyncing();
+	void tcStartCounter();
+	uint32_t __nowPlayingSampleIndex = 0;
+	uint32_t __arraySize;
+	const uint8_t* __arrayName;
+	bool volatile __isPlaying = false;
+
+	inline int _get_bit(uint_fast32_t pos, boolean autoLoadOnBit0 = false);
+	//const uint8_t* __SoundData;
+	int_fast16_t _decode_huff(uint_fast32_t &pos, int_fast16_t const *huffDict);
+	void loadSample();
+	const int_fast16_t *_HuffDict;
+	uint_fast32_t _SoundDataBits;
+	const uint8_t * _SoundData;
+
+	void setAmplifier(bool status); //turn amplifier on(true) or off(false)
+};
+
 
 
 #endif
