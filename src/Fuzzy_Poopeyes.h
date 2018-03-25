@@ -24,8 +24,8 @@
 #define ENABLE_DEVICE_2
 
 
-#define I2C_ADDRESS_1 0x3D //3D (0x7A on pcb) is placed at the left eye
-#define I2C_ADDRESS_2 0x3C //3C (0x78 on pcb) is placed at the right eye
+#define I2C_ADDRESS_1 0x3D //0x3D (0x7A soldered on pcb) is placed at the left eye
+#define I2C_ADDRESS_2 0x3C //0x3C (0x78 soldered on pcb) is placed at the right eye
 #define I2C_WRITE 0x00
 #define I2C_READ 0x01
 #define DISPLAY_OFF 0xAE

@@ -14,7 +14,7 @@ FuzzyOLEDDriver OLED;
 FuzzyDACAudio audio;
 
 #define IR_RECEIVER_INPUT_PIN A1
-#define IR_UPDATE_INTERVAL 20 //update period in milliseconds.
+#define IR_UPDATE_INTERVAL 5 //update period in milliseconds.
 #define IR_DETECTION_THRESHOLD 400
 #define IR_DETECTION_MIN_COUNT 2	//specify the minimum counts of IR detection to trigger an IR activation
 #define ACCUMULATE_DURATION 10
@@ -41,6 +41,7 @@ void setup()
 	//motor();
 
 	//pinMode(IR_RECEIVER_INPUT_PIN, INPUT);
+	eyeRotation();
 }
 
 void loop()
@@ -233,8 +234,8 @@ void updateIRSensor()
 				{
 					accumalateTimer = millis();
 					if(pupilInwardPixel<MAX_PUPIL_INWARD_PIXEL)pupilInwardPixel++;
-					OLED.setEyeTargetPosition(pupilInwardPixel, 0, pupilInwardPixel/3, -pupilInwardPixel/3, LEFT_EYE);
-					OLED.setEyeTargetPosition(-pupilInwardPixel, 0, pupilInwardPixel / 3, -pupilInwardPixel / 3, RIGHT_EYE);
+					OLED.setEyeTargetPosition(-pupilInwardPixel, 0, pupilInwardPixel/3, -pupilInwardPixel/3, LEFT_EYE);
+					OLED.setEyeTargetPosition(pupilInwardPixel, 0, pupilInwardPixel / 3, -pupilInwardPixel / 3, RIGHT_EYE);
 				}
 			}
 		}
@@ -255,12 +256,13 @@ void updateIRSensor()
 			OLED.setEyeTargetPosition(0, 0, -10, 10, RIGHT_EYE);
 			//a fixed time update to make the previous expression take effect
 			uint32_t updateTimer = millis();
-			while (millis() - updateTimer < 200)
+			while (millis() - updateTimer < 500)
 			{
 				OLED.update();
 			}
 			
-			audio.playHuffArrayBlocking(0);
+			uint8_t file = random(10);
+			audio.playHuffArrayBlocking(file);
 
 			//narrow
 			OLED.setEyeTargetPosition(0, -10, 0, 0, LEFT_EYE);
@@ -302,8 +304,8 @@ void setExpresssion()
 			}
 			case 2: //cross
 			{
-				OLED.setEyeTargetPosition(25, 0, 5, -5, LEFT_EYE);
-				OLED.setEyeTargetPosition(-25, 0, 5, -5, RIGHT_EYE);
+				OLED.setEyeTargetPosition(-25, 0, 5, -5, LEFT_EYE);
+				OLED.setEyeTargetPosition(25, 0, 5, -5, RIGHT_EYE);
 				break;
 			}
 			case 3: //wide
@@ -318,4 +320,28 @@ void setExpresssion()
 			}
 		}
 	}
+}
+
+void eyeRotation()
+{
+	uint32_t updateTimer;
+	OLED.stopAutoMovement();
+	
+	const int16_t radius = 20;
+	float deg = 0;
+	int16_t intx, inty;
+
+	updateTimer = millis();
+	while (millis() - updateTimer < 2000)
+	{
+		intx = (int16_t)(sin(deg)*radius);
+		inty = (int16_t)(cos(deg)*radius);
+		//Serial << intx << " " << inty << endl;
+		OLED.setEyeTargetPosition(intx, -inty, -20, 20, LEFT_EYE);
+		OLED.setEyeTargetPosition(-intx, inty, -20, 20, RIGHT_EYE);
+		OLED.update();
+		delay(10);
+		deg += 0.2;
+	}
+	OLED.startAutoMovement();
 }
