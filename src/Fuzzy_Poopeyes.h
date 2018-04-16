@@ -127,18 +127,19 @@ class FuzzyOLEDDriver
 {
 public:
 	FuzzyOLEDDriver();
-	void begin();
+	void begin(const unsigned char *_upperEyelidArray, const unsigned char *_pupilArray, const unsigned char *_lowerEyelidArray);//pass the eye bitmap array to the related operating array, input right eye only
 	void setDisplay(bool value);
 	void setContrast(uint8_t value);
 	void clear();
 	void writeBufferHorizontal(unionBufferType *buffer, EYE_INDEX eye);
-	void setEyeArray(const unsigned char *_upperEyelidArray, const unsigned char *_pupilArray, const unsigned char *_lowerEyelidArray); //copy the bitmap array to related operating array, input left only
+	void setEyeArray(const unsigned char *_upperEyelidArray, const unsigned char *_pupilArray, const unsigned char *_lowerEyelidArray); 
 	void testEye();
 	void blink();
 	void update();
 	void startAutoMovement();
 	void stopAutoMovement();
 	void fillHorizontal(uint8_t value);
+	void setEyePosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye);
 	void setEyeTargetPosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye);
 
 private:
@@ -239,13 +240,23 @@ private:
 
 
 
-#include "sounddata.h"
+//#include "sounddata.h"
+const uint_fast32_t SampleRate = 22050;
+const int_fast8_t SampleBits = 8;
 
 #define DAC_8_NEUTRAL 128
 #define DEFAULT_SAMPLE_RATE 22050
 #define SHUTDOWN_PIN 4
 #define ON true
 #define OFF false
+
+/*
+sound files:
+0-19
+
+
+
+*/
 
 struct {
 	// Current sample position
@@ -269,8 +280,8 @@ public:
 	void play8BitArray(const uint8_t* arrayName, uint32_t arraySize);
 	void interruptHandler();
 	bool isPlaying();
-	void playHuffArrayBlocking(uint8_t trackIndex);
-	void playHuffArrayBlocking(uint8_t trackIndex, uint16_t sampleRate);
+	void setSampleRate(uint16_t sampleRate);
+	void playHuffArray(const int_fast16_t * huffDict, uint_fast32_t soundDataBits, const uint8_t * soundData);
 
 private:
 	uint32_t _sampleRate = DEFAULT_SAMPLE_RATE;

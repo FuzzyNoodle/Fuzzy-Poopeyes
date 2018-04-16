@@ -11,13 +11,6 @@
 #include "Adafruit_ZeroDMA_Local.h"
 #include  "wiring_private.h" //pinPeripheral() function
 
-//Include one of the eyes matrix files here. Just one.
-
-#include "Eyes_UpperEyelid_128x64.h"
-#include "Eyes_Pupil_64x64.h"
-#include "Eyes_LowerEyelid_128x64.h"
-
-
 
 FuzzyOLEDDriver* FuzzyOLEDDriver::fuzzyOLEDPointer = 0;
 
@@ -37,7 +30,7 @@ FuzzyOLEDDriver::FuzzyOLEDDriver()
 	fuzzyOLEDPointer = this;
 }
 
-void FuzzyOLEDDriver::begin()
+void FuzzyOLEDDriver::begin(const unsigned char *_upperEyelidArray, const unsigned char *_pupilArray, const unsigned char *_lowerEyelidArray)
 {
 	
 	Wire.begin();
@@ -183,7 +176,7 @@ void FuzzyOLEDDriver::begin()
 
 	//Copy the bitmap array to related operating array.
 	//The array names are assigned here. 
-	setEyeArray(Eyes_UpperEyelid_128x64, Eyes_Pupil_64x64, Eyes_LowerEyelid_128x64);
+	setEyeArray(_upperEyelidArray, _pupilArray, _lowerEyelidArray);
 
 	//draw the left eye
 	drawEye(&unionScreenBuffer[0], &unionLeftUpperEyelidArray, &unionPupilArray, &unionLeftLowerEyelidArray, LEFT_EYE);
@@ -1315,6 +1308,32 @@ void FuzzyOLEDDriver::stopAutoMovement()
 	autoMovement = false;
 }
 
+void FuzzyOLEDDriver::setEyePosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye)
+{
+	if (eye == LEFT_EYE)
+	{
+		targetXLeft = PupilX;
+		leftPupilXPositionOffset = PupilX;
+		targetYLeft = PupilY;
+		leftPupilYPositionOffset = PupilY;
+		leftUpperEyelidPositionOffsetTarget = UpperEyelid;
+		leftUpperEyelidPositionOffset = UpperEyelid;
+		leftLowerEyelidPositionOffsetTarget = LowerEyelid;
+		leftLowerEyelidPositionOffset = LowerEyelid;
+	}
+	else if (eye == RIGHT_EYE)
+	{
+		targetXRight = PupilX;
+		rightPupilXPositionOffset = PupilX;
+		targetYRight = PupilY;
+		rightPupilYPositionOffset = PupilY;
+		rightUpperEyelidPositionOffsetTarget = UpperEyelid;
+		rightUpperEyelidPositionOffset = UpperEyelid;
+		rightLowerEyelidPositionOffsetTarget = LowerEyelid;
+		rightLowerEyelidPositionOffset = LowerEyelid;
+	}
+}
+
 void FuzzyOLEDDriver::setEyeTargetPosition(int16_t PupilX, int16_t PupilY, int16_t UpperEyelid, int16_t LowerEyelid, EYE_INDEX eye)
 {
 	if (eye == LEFT_EYE)
@@ -1331,9 +1350,9 @@ void FuzzyOLEDDriver::setEyeTargetPosition(int16_t PupilX, int16_t PupilY, int16
 		rightUpperEyelidPositionOffsetTarget = UpperEyelid;
 		rightLowerEyelidPositionOffsetTarget = LowerEyelid;
 	}
-
-	
 }
+
+
 
 /*pointer used to attach TC5 interrupt*/
 FuzzyDACAudio* _audioInstancePointer;
@@ -1350,55 +1369,12 @@ void FuzzyDACAudio::begin()
 	analogWriteResolution(8);
 	analogWrite(A0, DAC_8_NEUTRAL);
 
-	//configure the sound arrays
-	arrayMetadata[0]._HuffDict = HuffDict1;
-	arrayMetadata[0]._SoundDataBits = SoundDataBits1;
-	arrayMetadata[0]._SoundData = SoundData1;
-
-	arrayMetadata[1]._HuffDict = HuffDict2;
-	arrayMetadata[1]._SoundDataBits = SoundDataBits2;
-	arrayMetadata[1]._SoundData = SoundData2;
-
-	arrayMetadata[2]._HuffDict = HuffDict3;
-	arrayMetadata[2]._SoundDataBits = SoundDataBits3;
-	arrayMetadata[2]._SoundData = SoundData3;
-
-	arrayMetadata[3]._HuffDict = HuffDict4;
-	arrayMetadata[3]._SoundDataBits = SoundDataBits4;
-	arrayMetadata[3]._SoundData = SoundData4;
-
-	arrayMetadata[4]._HuffDict = HuffDict5;
-	arrayMetadata[4]._SoundDataBits = SoundDataBits5;
-	arrayMetadata[4]._SoundData = SoundData5;
-
-	arrayMetadata[5]._HuffDict = HuffDict6;
-	arrayMetadata[5]._SoundDataBits = SoundDataBits6;
-	arrayMetadata[5]._SoundData = SoundData6;
-
-	arrayMetadata[6]._HuffDict = HuffDict7;
-	arrayMetadata[6]._SoundDataBits = SoundDataBits7;
-	arrayMetadata[6]._SoundData = SoundData7;
-
-	arrayMetadata[7]._HuffDict = HuffDict8;
-	arrayMetadata[7]._SoundDataBits = SoundDataBits8;
-	arrayMetadata[7]._SoundData = SoundData8;
-
-	arrayMetadata[8]._HuffDict = HuffDict9;
-	arrayMetadata[8]._SoundDataBits = SoundDataBits9;
-	arrayMetadata[8]._SoundData = SoundData9;
-
-	arrayMetadata[9]._HuffDict = HuffDict10;
-	arrayMetadata[9]._SoundDataBits = SoundDataBits10;
-	arrayMetadata[9]._SoundData = SoundData10;
-
 	//active 8002D
 	pinMode(SHUTDOWN_PIN, OUTPUT);
 	setAmplifier(OFF);
-	
 
 	//configure the TC
 	tcConfigure(_sampleRate);
-
 }
 
 void FuzzyDACAudio::tcConfigure(uint32_t sampleRate)
@@ -1449,9 +1425,8 @@ void FuzzyDACAudio::play8BitArray(const uint8_t* arrayName, uint32_t arraySize)
 
 }
 
-void FuzzyDACAudio::playHuffArrayBlocking(uint8_t trackIndex)
+void FuzzyDACAudio::playHuffArray(const int_fast16_t * huffDict, uint_fast32_t soundDataBits, const uint8_t * soundData)
 {
-	if (trackIndex >= NUMBER_OF_SOUND_TRACKS) return;
 	if (__isPlaying == true)return;
 	__isPlaying = true;
 
@@ -1460,27 +1435,25 @@ void FuzzyDACAudio::playHuffArrayBlocking(uint8_t trackIndex)
 	//setup the values and array pointers 
 	g_stat.samplePosition = 0;
 	g_stat.currentPCM = 0;
-	_HuffDict = arrayMetadata[trackIndex]._HuffDict;
-	_SoundDataBits = arrayMetadata[trackIndex]._SoundDataBits;
-	_SoundData = arrayMetadata[trackIndex]._SoundData;
+	_HuffDict = huffDict;
+	_SoundDataBits = soundDataBits;
+	_SoundData = soundData;
 
 	tcStartCounter();
-	while (isPlaying());
+	//while (isPlaying());
 
 	//reset the sample rate to default value
-	TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / _sampleRate - 1);
-	while (tcIsSyncing());
+	//TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / _sampleRate - 1);
+	//while (tcIsSyncing());
 
-	setAmplifier(OFF);
+	//setAmplifier(OFF);
 }
 
-void FuzzyDACAudio::playHuffArrayBlocking(uint8_t trackIndex, uint16_t sampleRate)
+void FuzzyDACAudio::setSampleRate(uint16_t sampleRate)
 {
 	//setup the new sample rate
 	TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / sampleRate - 1);
 	while (tcIsSyncing());
-
-	playHuffArrayBlocking(trackIndex);
 }
 
 void FuzzyDACAudio::tcReset()
@@ -1578,11 +1551,7 @@ void FuzzyDACAudio::loadSample()
 {
 	auto samplePosition = g_stat.samplePosition;
 
-	// At end of sample, restart from zero, looping the sound.
-	// ------
-	// MIC: Don't forget to reset current amplitude, Thomas. :)
-	// Forgetting to reset amplitude will cause a positive feedback, which displays as a deterioration in playback.
-	// The time before playback failure depends on the last sample value.
+	// end of playing
 	if (samplePosition >= _SoundDataBits) {
 		//SERIAL_OBJECT << "samplePosition = " << samplePosition << endl;
 		samplePosition = 0;
@@ -1592,6 +1561,12 @@ void FuzzyDACAudio::loadSample()
 		tcDisable();
 		__isPlaying = false;
 		analogWrite(A0, DAC_8_NEUTRAL);
+
+		//resume default sample rate
+		TC5->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / _sampleRate - 1);
+		while (tcIsSyncing());
+
+		setAmplifier(OFF);
 	}
 
 	// MIC: The differential series Dif[N+1] := sbytes[N+1] - sbytes[N], and Dif[0] = sbytes[0].

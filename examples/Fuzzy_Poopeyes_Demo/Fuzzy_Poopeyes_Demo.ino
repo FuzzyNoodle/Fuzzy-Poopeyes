@@ -8,6 +8,12 @@
 #include "SerialCommandLiteUSB_Local.h""
 #include <Wire.h>
 #include "Adafruit_ZeroDMA_Local.h"
+#include "sounddata.h"
+
+//Include the eyes bitmap arrays. Array names are passed in the oled.begin() function.
+#include "Eyes_UpperEyelid_128x64.h"
+#include "Eyes_Pupil_64x64.h"
+#include "Eyes_LowerEyelid_128x64.h"
 
 SerialCommand SCmd;
 FuzzyOLEDDriver OLED;
@@ -19,29 +25,31 @@ FuzzyDACAudio audio;
 #define IR_DETECTION_MIN_COUNT 2	//specify the minimum counts of IR detection to trigger an IR activation
 #define ACCUMULATE_DURATION 10
 #define MAX_PUPIL_INWARD_PIXEL 30
-
+#define MOTOR_CONTROL_PIN 5
 
 void setup()
 {
 	Serial.begin(115200);
-	while (!Serial) { ; }// wait for serial port to connect
+	//while (!Serial) { ; }// wait for serial port to connect
 	Serial << "OLDE Tester started..." << endl;
-
+	 
 	addSerialCommands();
 	printAvailableCommands();
 
-	OLED.begin();
+	OLED.begin(Eyes_UpperEyelid_128x64, Eyes_Pupil_64x64, Eyes_LowerEyelid_128x64);
 	audio.begin();
 
 	Serial << "Enter '?' for available commands." << endl;
 	
-	//pinMode(5, OUTPUT);
-	//digitalWrite(5, HIGH);
-	//delay(3000);
-	//motor();
+	//setup motor
+	pinMode(MOTOR_CONTROL_PIN, OUTPUT);
+	digitalWrite(MOTOR_CONTROL_PIN, LOW);
+	
 
-	//pinMode(IR_RECEIVER_INPUT_PIN, INPUT);
-	eyeRotation();
+	
+
+	wakeUp();
+	//eyeRotation();
 }
 
 void loop()
@@ -86,37 +94,52 @@ void printAvailableCommands()
 	Serial << "set 0 0 0 0   :set pupil x,y; upper eyelid, lower eyelid offsets. "<< endl;
 	Serial << "exp 1         :set expression: 0=neutral 1=narrow 2=cross 3=wide" << endl;
 	Serial << "*********************************************************************** " << endl;
+
+
 }
 
 void motor()
 {
 	Serial << "Motor on" << endl;
-	pinMode(5, OUTPUT);
-	digitalWrite(5, HIGH);
-	delay(2000);
-	digitalWrite(5, LOW);
-
-
-	/*
-	pinMode(5, OUTPUT);
-	for(uint8_t i=0;i<255;i++)
+	
+	for(uint8_t i=1;i<255;i++)
 	{
 		analogWrite(5, i);
-		delay(5);
+		delay(2);
 	}
 	delay(1000);
 	for (uint8_t i = 255; i>=1; i--)
 	{
 		analogWrite(5, i);
-		delay(5);
+		delay(2);
 	}
-	//digitalWrite(5, HIGH);
+	
 	analogWrite(5, 0);
+	digitalWrite(5, LOW);
 
-
-	*/
-	//digitalWrite(5, LOW);
 	Serial << "Motor off" << endl;
+}
+
+void motorOn()
+{
+	Serial << "Motor on" << endl;
+	for (uint8_t i = 1; i<255; i++)
+	{
+		analogWrite(5, i);
+		delay(2);
+	}
+}
+
+void motorOff()
+{
+	Serial << "Motor off" << endl;
+	for (uint8_t i = 255; i >= 1; i--)
+	{
+		analogWrite(5, i);
+		delay(2);
+	}
+	analogWrite(5, 0);
+	digitalWrite(5, LOW);
 }
 
 void displayOn()
@@ -151,7 +174,7 @@ void fill()
 
 void beginOled()
 {
-	OLED.begin();
+	OLED.begin(Eyes_UpperEyelid_128x64, Eyes_Pupil_64x64, Eyes_LowerEyelid_128x64);
 }
 
 void clear()
@@ -174,8 +197,84 @@ void play()
 	char *arg1 = SCmd.next();
 	if (arg1 != NULL)
 	{
-		uint8_t soundfile = atoi(arg1);
-		audio.playHuffArrayBlocking(soundfile);
+		play(atoi(arg1));
+	}
+}
+
+void play(uint8_t trackNumber)
+{
+	switch (trackNumber)
+	{
+		case 0:
+		{
+			audio.playHuffArray(HuffDict_Yawing, SoundDataBits_Yawing, SoundData_Yawing);
+			break;
+		}
+		case 1:
+		{
+			audio.playHuffArray(HuffDict_short_1, SoundDataBits_short_1, SoundData_short_1);
+			break;
+		}
+		case 2:
+		{
+			audio.playHuffArray(HuffDict_short_2, SoundDataBits_short_2, SoundData_short_2);
+			break;
+		}
+		case 3:
+		{
+			audio.playHuffArray(HuffDict_short_3, SoundDataBits_short_3, SoundData_short_3);
+			break;
+		}
+		case 4:
+		{
+			audio.playHuffArray(HuffDict_short_4, SoundDataBits_short_4, SoundData_short_4);
+			break;
+		}
+		case 5:
+		{
+			audio.playHuffArray(HuffDict_short_5, SoundDataBits_short_5, SoundData_short_5);
+			break;
+		}
+		case 6:
+		{
+			audio.playHuffArray(HuffDict_short_6, SoundDataBits_short_6, SoundData_short_6);
+			break;
+		}
+		case 7:
+		{
+			audio.playHuffArray(HuffDict_medium_1, SoundDataBits_medium_1, SoundData_medium_1);
+			break;
+		}
+		case 8:
+		{
+			audio.playHuffArray(HuffDict_medium_2, SoundDataBits_medium_2, SoundData_medium_2);
+			break;
+		}
+		case 9:
+		{
+			audio.playHuffArray(HuffDict_medium_3, SoundDataBits_medium_3, SoundData_medium_3);
+			break;
+		}
+		case 24:
+		{
+			//audio.playHuffArray(HuffDict_medium_4, SoundDataBits_medium_4, SoundData_medium_4);
+			break;
+		}
+		case 10:
+		{
+			audio.playHuffArray(HuffDict_long_1, SoundDataBits_long_1, SoundData_long_1);
+			break;
+		}
+		case 32:
+		{
+			//audio.playHuffArray(HuffDict_long_2, SoundDataBits_long_2, SoundData_long_2);
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
 	}
 }
 
@@ -208,6 +307,7 @@ void updateIRSensor()
 	static uint8_t accumulateCounter = 0;
 	static uint32_t accumalateTimer;
 	static int8_t pupilInwardPixel = 0;
+	static uint8_t accumalatedStrength = 0;
 
 	static bool actionIsArmed = false;
 	if (millis() - IRUpdateTimer < IR_UPDATE_INTERVAL) return;
@@ -227,12 +327,14 @@ void updateIRSensor()
 				OLED.setEyeTargetPosition(0, 0, 0, 0, RIGHT_EYE);
 				accumalateTimer = millis();
 				pupilInwardPixel = 0;
+				accumalatedStrength = 0;
 			}
 			else
 			{
 				if (millis() - accumalateTimer > ACCUMULATE_DURATION)
 				{
 					accumalateTimer = millis();
+					if (accumalatedStrength < 100)accumalatedStrength++;
 					if(pupilInwardPixel<MAX_PUPIL_INWARD_PIXEL)pupilInwardPixel++;
 					OLED.setEyeTargetPosition(-pupilInwardPixel, 0, pupilInwardPixel/3, -pupilInwardPixel/3, LEFT_EYE);
 					OLED.setEyeTargetPosition(pupilInwardPixel, 0, pupilInwardPixel / 3, -pupilInwardPixel / 3, RIGHT_EYE);
@@ -248,21 +350,56 @@ void updateIRSensor()
 	{
 		if (actionIsArmed == true)
 		{
-			Serial << "Released !" << endl;
+			Serial << "Released ! " << accumalatedStrength <<endl;
 			actionIsArmed = false;
 
-			//wide
+			//wide eye
 			OLED.setEyeTargetPosition(0, 0, -10, 10, LEFT_EYE);
 			OLED.setEyeTargetPosition(0, 0, -10, 10, RIGHT_EYE);
+
+			
+			//1-6 short, 7-9 medium, 10 long
+			if (accumalatedStrength < 20)
+			{
+				//short sound + wide eye
+				uint8_t trackNumber = random(4);
+				play(trackNumber + 1);
+			}
+			else if (accumalatedStrength < 60)
+			{
+				//short or medium sound + wide eye
+				uint8_t trackNumber = random(9);
+				play(trackNumber + 1);
+			}
+			else if (accumalatedStrength < 80)
+			{
+				//medium or long + wide eye
+				uint8_t trackNumber = random(4);
+				play(trackNumber + 7);
+			}
+			else
+			{
+				//long sound + rotate eye
+				
+				play(10);
+				eyeRotation();
+				while (audio.isPlaying());
+				motorOn();
+				delay(500);
+				motorOff();
+			}
+
 			//a fixed time update to make the previous expression take effect
 			uint32_t updateTimer = millis();
-			while (millis() - updateTimer < 500)
+			//while (millis() - updateTimer < 500)
+			//{
+			//	OLED.update();
+			//}
+			
+			while (audio.isPlaying())
 			{
 				OLED.update();
 			}
-			
-			uint8_t file = random(10);
-			audio.playHuffArrayBlocking(file);
 
 			//narrow
 			OLED.setEyeTargetPosition(0, -10, 0, 0, LEFT_EYE);
@@ -325,23 +462,61 @@ void setExpresssion()
 void eyeRotation()
 {
 	uint32_t updateTimer;
-	OLED.stopAutoMovement();
 	
-	const int16_t radius = 20;
+	float radius = 30;
 	float deg = 0;
 	int16_t intx, inty;
 
 	updateTimer = millis();
-	while (millis() - updateTimer < 2000)
+	while (millis() - updateTimer < 3000)
 	{
-		intx = (int16_t)(sin(deg)*radius);
-		inty = (int16_t)(cos(deg)*radius);
+		
+		intx = (int16_t)(sin(deg)*(int16_t)radius);
+		inty = (int16_t)(cos(deg)*(int16_t)radius);
 		//Serial << intx << " " << inty << endl;
 		OLED.setEyeTargetPosition(intx, -inty, -20, 20, LEFT_EYE);
 		OLED.setEyeTargetPosition(-intx, inty, -20, 20, RIGHT_EYE);
 		OLED.update();
 		delay(10);
 		deg += 0.2;
+		radius -= 0.1;
+	}
+}
+
+void wakeUp()
+{
+	uint32_t updateTimer;
+	OLED.stopAutoMovement();
+
+	
+	OLED.setEyePosition(0, 20, 32, -32, LEFT_EYE);
+	OLED.setEyePosition(0, 20, 32, -32, RIGHT_EYE);
+	OLED.update();
+
+	int16_t h = 0;
+
+	updateTimer = millis();
+	while (millis() - updateTimer < 1000)
+	{
+		OLED.setEyePosition(0, 20 - h, 32 - h, -32 + h, LEFT_EYE);
+		OLED.setEyePosition(0, 20 - h, 32 - h, -32 + h, RIGHT_EYE);
+		OLED.update();
+		h++;
+		if (h > 20)h = 20;
+		delay(50);
+	}
+
+	audio.playHuffArray(HuffDict_Yawing, SoundDataBits_Yawing, SoundData_Yawing);
+	delay(1000);
+	updateTimer = millis();
+	while (millis() - updateTimer < 2000)
+	{
+		OLED.setEyePosition(0, 0, 32-h, -32+h, LEFT_EYE);
+		OLED.setEyePosition(0, 0, 32-h, -32+h, RIGHT_EYE);
+		OLED.update();
+		h++;
+		if (h > 40)h = 40;
+		delay(30);
 	}
 	OLED.startAutoMovement();
 }
